@@ -17,38 +17,87 @@ BuildInitialState(rand(3), rand(3))
 BuildInitialState(rand(6))
 ```
 """
-BuildInitialState(magnitude, phase) = normalize(@. magnitude + phase * im)
-function BuildInitialState(data)
-    iseven(length(data)) || error("长度应该是偶数")
-    return BuildInitialState(data[1:Int(length(data)/2)], data[Int(length(data)/2)+1:end])
-end
+BuildInitialState(magnitude, phase) = normalize(magnitude .+ phase * im)
+BuildInitialState(magnitude)        = normalize(magnitude)
 
 """
-    BuildUnitaryMatrix(P::AbstractVector)
+    BuildUnitaryMatrix(REAL::AbstractVector, IMAG::AbstractVector)
 
-In linear algebra, an invertible complex square matrix `U`` is unitary if its conjugate transpose is also its inverse.
+If `X` is skew-Hermitian, then `e^X` is unitary. `X` is skew-Hermitian if and only if `im * X` or `-im * X` is Hermitian.
+
+In mathematics, a Hermitian matrix (or self-adjoint matrix) is a complex square matrix that is equal to its own conjugate transpose - 
+that is, the element in the `i`-th row and `j`-th column is equal to the complex conjugate of the element in the `j`-th row and `i`-th column, 
+for all indices `i` and `j``. Or in matrix form, ``A = \\overhat{A^T}``. Hermitian matrices can be understood as the complex extension of real symmetric matrices.
+
+A `N x N` Hermitian matrix is determined by `N(N-1)/2` scalars above the main diagonal, and `N` scalars on the main diagonal.
+The entries on the main diagonal (top left to bottom right) of any Hermitian matrix are real. And other elements are complex.
+So the real part of matrix is determined by `N(N+1)/2 = N(N-1)/2 + N` scalars, and 
+the imaginary part of the matrix is determined by `N(N-1)/2` scalars.
+
+And `N^2` scalars in total are needed to create a `N x N` Hermitian matrix.
 
 # Examples
 ```julia
-BuildUnitaryMatrix(rand(9))
+RL, IM = rand(6), rand(3)
+U = BuildUnitaryMatrix(RL, IM)
+U'U ≈ U*U' ≈ U*inv(U) ≈ I
 ```
 """
-function BuildUnitaryMatrix(P::AbstractVector)
-    dim = sqrt(length(P))
-    isinteger(dim) || error("长度 != N^2")
-    H = zeros(Complex, Int(dim), Int(dim))
-    i = 1
+function BuildUnitaryMatrix(REAL::AbstractVector, IMAG::AbstractVector)
+    dimRL = (-1 + sqrt(1+8*length(REAL))) / 2 
+    dimIM = ( 1 + sqrt(1+8*length(IMAG))) / 2 
+    isinteger(dimRL) || error("REAL 长度 != N(N+1)/2")
+    isinteger(dimIM) || error("IMAG 长度 != N(N-1)/2")
+    dimRL == dimIM   || error("长度 REAL != IMAG")
+    H = zeros(Complex, Int(dimRL), Int(dimRL))
+    i, j = 1, 1
     for idx in CartesianIndices(H)
-        if idx[1] == idx[2]
-            H[idx] = P[i]
+        if idx[1] > idx[2]
+            H[idx] = REAL[i] + IMAG[j]*im
+            i += 1
+            j += 1
+        elseif idx[1] == idx[2]
+            H[idx] = REAL[i]
             i += 1
         elseif idx[1] < idx[2]
-            H[idx] = P[i] + P[i+1]*im
-            i += 2
+            H[idx] = (H[idx[2], idx[1]])'
         end
     end
-    H = Hermitian(H, :U)
     U = exp(-im * H)
+    return U
+end
+
+"""
+    BuildUnitaryMatrix(REAL::AbstractVector)
+
+If `X` is a skew-symmetric matrix (反对称矩阵), then matrix exponential `e^X` is orthogonal. 
+A matrix `X` is skew-symmetric if and only if `X' == -X`. 
+In terms of the entries of the matrix, if ``a_{ij}`` denotes the entry in the `i`-th row and `j`-th column, 
+then the skew-symmetric condition is equivalent to ``a_{ji} = -a_{ij}``. 
+
+The elements on the diagonal of a skew-symmetric matrix are zero, and therefore its trace equals zero. 
+A `N x N` skew-symmetric matrix is determined by ``N(N-1)/2`` scalars (the number of entries above the main diagonal)
+
+# Example
+```julia
+U = BuildUnitaryMatrix(rand(6))
+U'U ≈ U*U' ≈ U*inv(U) ≈ I
+```
+"""
+function BuildUnitaryMatrix(REAL::AbstractVector)
+    dim = (1 + sqrt(1+8*length(REAL))) / 2 
+    isinteger(dim) || error("长度 != N(N-1)/2")
+    H = zeros(Int(dim), Int(dim))
+    i = 1
+    for idx in CartesianIndices(H)
+        if idx[1] > idx[2]
+            H[idx] = REAL[i]
+            i += 1
+        elseif idx[1] < idx[2]
+            H[idx] = -H[idx[2], idx[1]]
+        end
+    end
+    U = exp(H)
     return U
 end
 
@@ -98,6 +147,7 @@ function BuildCompatible(vs::Vector{Int})
         for v in 1:val
             IdC         = copy(IdS)
             IdC[idx]    = 1I(val) .* 1I(val)[v, :]
+            # IdC[idx]    = 1I(val)[v, :] * 1I(val)[v, :]'
             MtS[idx][v] = reduce(kron, IdC)
         end
         # for v in (val+1):prod(vs)
