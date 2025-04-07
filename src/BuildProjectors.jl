@@ -3,7 +3,7 @@ using LinearAlgebra: I
 """
     BuildCompatibleBasis(CompatibleList)
 
-Create a dictory of bases for each compatible variable
+Create a ordered dictionary of bases for each compatible variable
 
 # Example
 ```{julia}
@@ -85,24 +85,6 @@ function BuildInCompatibleProjectors(CompatibleList, InCompatibleList)
     end
     return InCompatibleProjectors
 end
-# function BuildInCompatibleProjectors(CompatibleList, InCompatibleList)
-#     InCompatibleProjectors = OrderedDict{String, OrderedDict}()
-#     for val in InCompatibleList
-#         TargetLabel, SourceLabel, UnitaryMatrix = first(val), first(last(val)), last(last(val))
-#         vv = CompatibleList[findfirst(x -> first(x) == SourceLabel, CompatibleList)]
-#         idx, res = first(vv), last(vv)
-#         OriginalProjector = BuildCompatibleProjectors(CompatibleList)[idx]
-#         MT = OrderedDict{String, Matrix}()
-#         for (rid, rval) in enumerate(res)
-#             CompatibleBasis = BuildCompatibleBasis(CompatibleList)
-#             setindex!(CompatibleBasis, UnitaryMatrix, idx)
-#             RotationMatrix = reduce(kron, [last(d) for d in CompatibleBasis])
-#             setindex!(MT, RotationMatrix * OriginalProjector[rval] * RotationMatrix', rval)
-#         end
-#         setindex!(InCompatibleProjectors, MT, TargetLabel)
-#     end
-#     return InCompatibleProjectors
-# end
 
 """
     BuildProjectors(CompatibleList)
@@ -111,8 +93,8 @@ end
 - `CompatibleList = (id_c1 => n_1, ..., id_ck => n_k, ..., id_cn => n_n)`: 
     `n` variables are compatible with each other, with the `id_ck`th variable has `n_k` possible values.
 - `InCompatibleList = [id_ic1 => id_c1, ..., id_ick => id_ck,..., id_icn => id_cn]`:
-    `n` variables incompatible with the remaing variables.
-    Projector for variabel `id_ick` formed by rotate the `id_ck`th projector using unitary matrix names `id_ick`
+    `n` variables incompatible with the remaining variables.
+    Projector for variable `id_ick` formed by rotate the `id_ck`th projector using unitary matrix names `id_ick`
 - `UnitaryList = (id_ic1 => mt_1, ..., id_ick => mt_k, ..., id_icn => mt_n)`
     `n` unitary matrix corresponding to the `n` incompatible variables, used to rotate the specific projector
 

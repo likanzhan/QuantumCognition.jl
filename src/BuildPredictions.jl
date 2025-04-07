@@ -16,14 +16,14 @@ Projectors = BuildProjectors(CompatibleList, InCompatibleList)
 BuildPredictions(Projectors, Contexts, InitialState)
 ```
 """
-function BuildPredictions(Projectors, Contexts, InitialState)
+function BuildPredictions(Projectors, Contexts, InitialState; classical = false)
     Context = String[]; Responses = String[]; Probability = Float64[]
     for context in Contexts
         Projector1, Projector2 = Projectors[first(context)], Projectors[last(context)]
         Responses1, Responses2 = [first(p) for p in Projector1], [first(p) for p in Projector2]
         for res1 in Responses1, res2 in Responses2
             prj2prj1 = Projector2[res2] * Projector1[res1] * InitialState
-            prob  = real(prj2prj1'prj2prj1)
+            prob  = classical ? sum(prj2prj1) : real(prj2prj1'prj2prj1) ## ?????? Why Different?
             push!(Context, first(context)*last(context))
             push!(Responses, res1*res2)
             push!(Probability, prob)

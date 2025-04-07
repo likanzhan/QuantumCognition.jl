@@ -12,12 +12,15 @@ function BuildReal(REAL::AbstractVector)
     H = zeros(Int(dim), Int(dim))
     i = 1
     for idx in CartesianIndices(H)
-        if idx[1] > idx[2]
+        if idx[1] >= idx[2]
             H[idx] = REAL[i]
             i += 1
-        elseif idx[1] == idx[2]
-            H[idx] = REAL[i]
-            i += 1
+        # if idx[1] > idx[2]
+        #     H[idx] = REAL[i]
+        #     i += 1
+        # elseif idx[1] == idx[2]
+        #     H[idx] = REAL[i]
+        #     i += 1
         elseif idx[1] < idx[2]
             H[idx] = H[idx[2], idx[1]]
         end
